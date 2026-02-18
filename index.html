@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 500px;
+            max-width: 700px;
             margin: 0 auto;
             background: white;
             border-radius: 8px;
@@ -49,10 +49,15 @@
         input[type="text"] {
             width: 100%;
             padding: 10px;
+            padding-right: 30px;
             border: 1px solid #ddd;
             border-radius: 4px;
             font-size: 1em;
             background: white;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            cursor: pointer;
         }
         
         select:focus,
@@ -262,6 +267,70 @@
         .rules-info li {
             margin: 5px 0;
         }
+
+        /* Timeline Graph Styles */
+        .timeline-section {
+            max-width: 900px;
+            margin: 30px auto 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+
+        .timeline-container {
+            padding: 0;
+            background: transparent;
+            border-radius: 0;
+            border: none;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        .timeline-canvas {
+            width: 100%;
+            height: 100px;
+            display: block;
+        }
+
+        .timeline-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-mineday {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid #4CAF50;
+        }
+
+        .legend-current {
+            background: #e91e63;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body>
@@ -270,9 +339,12 @@
         
         <div class="form-group">
             <label for="anchor_time">Anchor Time:</label>
-            <select id="anchor_time">
-                <!-- Populated by JavaScript -->
-            </select>
+            <div class="dropdown-wrapper">
+                <select id="anchor_time">
+                    <!-- Populated by JavaScript -->
+                </select>
+                <span class="dropdown-arrow">▼</span>
+            </div>
         </div>
         
         <div class="form-group">
@@ -317,6 +389,23 @@
                 <li><strong>Anchor ≥ 12:00:</strong> Mine day starts previous day at anchor, ends at anchor</li>
             </ol>
         </details>
+    </div>
+
+    <div class="timeline-section" id="timelineSection" style="display: none;">
+        <div class="timeline-container">
+            <div class="timeline-title">Mine Day Timeline (ISO Hours)</div>
+            <canvas class="timeline-canvas" id="timelineCanvas"></canvas>
+            <div class="timeline-legend">
+                <div class="legend-item">
+                    <div class="legend-color legend-mineday"></div>
+                    <span>Mine Day Range</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-current"></div>
+                    <span>Current Time</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -635,7 +724,9 @@
                 currentTime: formatTime(tzDate),
                 utcOffset: getUtcOffset(timezoneStr),
                 mineDayIsoStart: mineDayIsoStart,
-                mineDayIsoEnd: mineDayIsoEnd
+                mineDayIsoEnd: mineDayIsoEnd,
+                tzDate: tzDate,
+                anchorHour: anchorHour
             };
         }
 
@@ -648,15 +739,235 @@
             document.getElementById('utcOffset').textContent = result.utcOffset;
 
             const rangeEl = document.getElementById('mineDayRange');
-            const startPretty = result.mineDayIsoStart.replace('T', ' ');
-            const endPretty = result.mineDayIsoEnd.replace('T', ' ');
+            // Convert ISO format (YYYY-MM-DD) to DD-MM-YYYY HH:MM
+            const formatRangeDate = (isoStr) => {
+                const [datePart, timePart] = isoStr.split('T');
+                const [year, month, day] = datePart.split('-');
+                return `${day}-${month}-${year} ${timePart}`;
+            };
+            const startPretty = formatRangeDate(result.mineDayIsoStart);
+            const endPretty = formatRangeDate(result.mineDayIsoEnd);
             rangeEl.innerHTML = `
                 <span class="range-chip">${startPretty}</span>
                 <span class="range-separator">to</span>
                 <span class="range-chip">${endPretty}</span>
             `;
 
+            // Draw timeline
+            drawTimeline(result);
+
             document.getElementById('results').classList.add('show');
+            document.getElementById('timelineSection').style.display = 'block';
+        }
+
+        // Draw timeline graph
+        function drawTimeline(result) {
+            const canvas = document.getElementById('timelineCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size for sharp rendering
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            const width = rect.width;
+            const height = rect.height;
+            const padding = { left: 25, right: 25, top: 30, bottom: 45 };
+            const graphWidth = width - padding.left - padding.right;
+            const graphHeight = height - padding.top - padding.bottom;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Get current date in timezone
+            const tzDate = result.tzDate;
+            const today = new Date(tzDate.getFullYear(), tzDate.getMonth(), tzDate.getDate());
+            
+            // Parse mine day range
+            const startParts = result.mineDayIsoStart.split('T');
+            const endParts = result.mineDayIsoEnd.split('T');
+            const mineDayStartDate = new Date(startParts[0]);
+            let mineDayEndDate = new Date(endParts[0]);
+            const startHour = parseInt(startParts[1].split(':')[0]);
+            let endHour = parseInt(endParts[1].split(':')[0]);
+            const endMinute = parseInt(endParts[1].split(':')[1]);
+            
+            // If end time is 23:59, treat as ending at 00:00 next day for the graph (spans full 24 hours)
+            if (endHour === 23 && endMinute === 59) {
+                mineDayEndDate.setDate(mineDayEndDate.getDate() + 1);
+                endHour = 0;
+            }
+            
+            // Calculate view window: extend 4 hours before mine day start and 4 hours after mine day end for visual clarity
+            const viewStartDate = new Date(mineDayStartDate);
+            viewStartDate.setHours(startHour - 4, 0, 0, 0);
+            const viewEndDate = new Date(mineDayEndDate);
+            viewEndDate.setHours(endHour + 4, 0, 0, 0);
+            
+            // Normalize if hours went negative
+            if (viewStartDate.getHours() > 20 && startHour < 6) {
+                viewStartDate.setDate(viewStartDate.getDate() - 1);
+            }
+            
+            // Total hours to display
+            const totalMs = viewEndDate - viewStartDate;
+            const totalHours = totalMs / (1000 * 60 * 60);
+            const hourWidth = graphWidth / totalHours;
+            
+            // Helper: convert date+hour to X position
+            function dateTimeToX(date, hour, minute = 0) {
+                const targetTime = new Date(date);
+                targetTime.setHours(hour, minute, 0, 0);
+                const hoursFromStart = (targetTime - viewStartDate) / (1000 * 60 * 60);
+                return padding.left + hoursFromStart * hourWidth;
+            }
+            
+            // Draw mine day highlight (reduced height)
+            const highlightStartX = dateTimeToX(mineDayStartDate, startHour);
+            const highlightEndX = dateTimeToX(mineDayEndDate, endHour);
+            const highlightWidth = highlightEndX - highlightStartX;
+            const highlightHeight = 20;
+            const highlightY = padding.top + (graphHeight - highlightHeight) / 2;
+            
+            ctx.fillStyle = 'rgba(76, 175, 80, 0.35)';
+            ctx.fillRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
+            
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
+            
+            // Draw timeline axis
+            ctx.strokeStyle = '#bbb';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top + graphHeight);
+            ctx.lineTo(width - padding.right, padding.top + graphHeight);
+            ctx.stroke();
+            
+            // Draw hour markers and labels
+            ctx.textAlign = 'center';
+            
+            // Iterate through hours in view
+            let currentTime = new Date(viewStartDate);
+            let lastDateLabel = '';
+            let hourCount = 0;
+            
+            while (currentTime <= viewEndDate) {
+                const hour = currentTime.getHours();
+                const x = dateTimeToX(currentTime, hour);
+                
+                // Draw tick mark (taller at midnight)
+                const isMidnight = hour === 0;
+                ctx.strokeStyle = isMidnight ? '#333' : '#ccc';
+                ctx.lineWidth = isMidnight ? 2 : 0.5;
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top + graphHeight);
+                ctx.lineTo(x, padding.top + graphHeight + (isMidnight ? 12 : 5));
+                ctx.stroke();
+                
+                // Draw vertical grid line at midnight
+                if (isMidnight) {
+                    ctx.strokeStyle = '#e0e0e0';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding.top);
+                    ctx.lineTo(x, padding.top + graphHeight);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                
+                // Draw all hour labels
+                ctx.fillStyle = isMidnight ? '#333' : '#777';
+                ctx.font = isMidnight ? 'bold 11px Segoe UI, sans-serif' : '10px Segoe UI, sans-serif';
+                ctx.fillText(hour.toString().padStart(2, '0'), x, padding.top + graphHeight + 20);
+                
+                // Draw date labels at midnight
+                if (isMidnight) {
+                    const dateStr = `${currentTime.getDate().toString().padStart(2, '0')}-${(currentTime.getMonth() + 1).toString().padStart(2, '0')}-${currentTime.getFullYear()}`;
+                    if (dateStr !== lastDateLabel) {
+                        ctx.fillStyle = '#1565c0';
+                        ctx.font = 'bold 11px Segoe UI, sans-serif';
+                        ctx.fillText(dateStr, x, padding.top + graphHeight + 38);
+                        lastDateLabel = dateStr;
+                    }
+                }
+                
+                // Move to next hour
+                currentTime.setHours(currentTime.getHours() + 1);
+                hourCount++;
+            }
+            
+            // Draw current time marker
+            const currentX = dateTimeToX(today, tzDate.getHours(), tzDate.getMinutes());
+            
+            if (currentX >= padding.left && currentX <= width - padding.right) {
+                ctx.strokeStyle = '#e91e63';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(currentX, padding.top);
+                ctx.lineTo(currentX, padding.top + graphHeight);
+                ctx.stroke();
+                
+                // Draw current time dot
+                ctx.fillStyle = '#e91e63';
+                ctx.beginPath();
+                ctx.arc(currentX, highlightY + highlightHeight / 2, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw "Now" label with time
+                ctx.fillStyle = '#e91e63';
+                ctx.font = 'bold 10px Segoe UI, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Now', currentX, padding.top - 5);
+            }
+            
+            // Draw mine day label in the middle of highlight
+            const mineDayLabelX = highlightStartX + highlightWidth / 2;
+            ctx.fillStyle = '#2e7d32';
+            ctx.font = 'bold 11px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Mine Day: ' + result.mineDay, mineDayLabelX, highlightY - 8);
+            
+            // Draw start boundary marker with date
+            ctx.strokeStyle = '#2e7d32';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 2]);
+            ctx.beginPath();
+            ctx.moveTo(highlightStartX, padding.top);
+            ctx.lineTo(highlightStartX, padding.top + graphHeight);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Start date label (rotated or positioned above)
+            const startDateParts = startParts[0].split('-');
+            const startDateStr = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
+            ctx.fillStyle = '#2e7d32';
+            ctx.font = 'bold 10px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(startDateStr, highlightStartX, padding.top - 5);
+            ctx.fillText(startParts[1], highlightStartX, padding.top + 10);
+            
+            // Draw end boundary marker with date
+            ctx.strokeStyle = '#2e7d32';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 2]);
+            ctx.beginPath();
+            ctx.moveTo(highlightEndX, padding.top);
+            ctx.lineTo(highlightEndX, padding.top + graphHeight);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // End date label
+            const endDateForLabel = new Date(mineDayEndDate);
+            const endDateStr = `${endDateForLabel.getDate().toString().padStart(2, '0')}-${(endDateForLabel.getMonth() + 1).toString().padStart(2, '0')}-${endDateForLabel.getFullYear()}`;
+            ctx.fillStyle = '#2e7d32';
+            ctx.font = 'bold 10px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(endDateStr, highlightEndX, padding.top - 5);
+            ctx.fillText(endHour.toString().padStart(2, '0') + ':00', highlightEndX, padding.top + 10);
         }
 
         // Update calculation
