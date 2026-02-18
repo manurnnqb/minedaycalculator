@@ -93,7 +93,7 @@
             top: 50%;
             transform: translateY(-50%);
             pointer-events: none;
-            color: #666;
+            color: #667;
             font-size: 0.8em;
         }
 
@@ -200,7 +200,6 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            flex-wrap: wrap;
             margin-top: 6px;
         }
 
@@ -271,7 +270,7 @@
             border-radius: 6px;
             border-left: 4px solid #f0ad4e;
             font-size: 0.85em;
-            color: #666;
+            color: #667;
         }
 
         .rules-info summary {
@@ -325,7 +324,7 @@
             gap: 30px;
             margin-top: 15px;
             font-size: 0.85em;
-            color: #666;
+            color: #667;
         }
 
         .legend-item {
@@ -433,10 +432,12 @@
                 <div class="result-value range-iso" id="mineDayRange"></div>
             </div>
             
+            <!-- UTC Range section commented out - not required currently
             <div class="result-item">
                 <div class="result-label">Current Mine Day's Range (UTC):</div>
                 <div class="result-value range-iso" id="mineDayRangeUtc"></div>
             </div>
+            -->
         </div>
 
         <details class="rules-info">
@@ -1001,7 +1002,7 @@
             document.getElementById('rangeTz').textContent = selectedTimezone;
 
             const rangeEl = document.getElementById('mineDayRange');
-            const rangeUtcEl = document.getElementById('mineDayRangeUtc');
+            // const rangeUtcEl = document.getElementById('mineDayRangeUtc'); // UTC range not required currently
             
             // Convert ISO format (YYYY-MM-DD) to DD-MM-YYYY HH:MM
             const formatRangeDate = (isoStr) => {
@@ -1017,14 +1018,14 @@
                 <span class="range-chip">${endPretty}</span>
             `;
             
-            // Calculate and display UTC range
-            const startUtc = convertToUtc(result.mineDayIsoStart, selectedTimezone, false);
-            const endUtc = convertToUtc(result.mineDayIsoEnd, selectedTimezone, true);
-            rangeUtcEl.innerHTML = `
-                <span class="range-chip">${startUtc}</span>
-                <span class="range-separator">to</span>
-                <span class="range-chip">${endUtc}</span>
-            `;
+            // UTC Range section commented out - not required currently
+            // const startUtc = convertToUtc(result.mineDayIsoStart, selectedTimezone, false);
+            // const endUtc = convertToUtc(result.mineDayIsoEnd, selectedTimezone, true);
+            // rangeUtcEl.innerHTML = `
+            //     <span class="range-chip">${startUtc}</span>
+            //     <span class="range-separator">to</span>
+            //     <span class="range-chip">${endUtc}</span>
+            // `;
 
             // Draw timeline
             drawTimeline(result);
@@ -1132,7 +1133,7 @@
             ctx.strokeRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
             
             // Draw timeline axis
-            ctx.strokeStyle = '#666';
+            ctx.strokeStyle = '#667';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(padding.left, padding.top + graphHeight);
@@ -1172,13 +1173,10 @@
                     ctx.setLineDash([]);
                 }
                 
-                // Draw hour labels only at midnight or every 3 hours
-                const shouldShowLabel = isMidnight || hour % 3 === 0;
-                if (shouldShowLabel) {
-                    ctx.fillStyle = isMidnight ? '#333' : '#444';
-                    ctx.font = isMidnight ? 'bold 11px Segoe UI, sans-serif' : '10px Segoe UI, sans-serif';
-                    ctx.fillText(hour.toString().padStart(2, '0'), x, padding.top + graphHeight + 20);
-                }
+                // Draw hour labels for all hours
+                ctx.fillStyle = isMidnight ? '#333' : '#444';
+                ctx.font = isMidnight ? 'bold 11px Segoe UI, sans-serif' : '10px Segoe UI, sans-serif';
+                ctx.fillText(hour.toString().padStart(2, '0'), x, padding.top + graphHeight + 20);
                 
                 // Draw date labels at midnight
                 if (isMidnight) {
