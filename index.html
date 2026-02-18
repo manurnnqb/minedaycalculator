@@ -338,6 +338,31 @@
             height: 10px;
             border-radius: 2px;
         }
+
+        /* Flash animation for data updates */
+        @keyframes flashUpdate {
+            0% {
+                background-color: transparent;
+            }
+            50% {
+                background-color: rgba(76, 175, 80, 0.25);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+
+        .flash-update {
+            animation: flashUpdate 0.6s ease-out;
+        }
+
+        .result-item.flash-update {
+            border-radius: 6px;
+        }
+
+        .timeline-section.flash-update {
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
@@ -346,11 +371,12 @@
         
         <div class="form-group">
             <label for="anchor_time">Anchor Time:</label>
-            <div class="dropdown-wrapper">
-                <select id="anchor_time">
-                    <!-- Populated by JavaScript -->
-                </select>
+            <div class="dropdown-wrapper" id="anchor_wrapper">
+                <input type="text" class="dropdown-input" id="anchor_input" placeholder="Select anchor time..." autocomplete="off" readonly>
                 <span class="dropdown-arrow">▼</span>
+                <div class="dropdown-list" id="anchor_list">
+                    <!-- Populated by JavaScript -->
+                </div>
             </div>
         </div>
         
@@ -447,18 +473,94 @@
 
         let updateInterval = null;
         let selectedTimezone = '';
+        let selectedAnchorTime = '00:00';
         let highlightedIndex = -1;
+        let highlightedAnchorIndex = -1;
 
-        // Populate anchor time dropdown (00:00 to 23:00)
+        // Populate anchor time dropdown (00:00 to 23:30 in 30-minute intervals)
         function populateAnchorTimes() {
-            const select = document.getElementById('anchor_time');
+            const list = document.getElementById('anchor_list');
+            const input = document.getElementById('anchor_input');
+            
+            // Set default value
+            selectedAnchorTime = '00:00';
+            input.value = selectedAnchorTime;
+            
+            // Populate list
             for (let hour = 0; hour < 24; hour++) {
-                const option = document.createElement('option');
-                const timeStr = `${hour.toString().padStart(2, '0')}:00`;
-                option.value = timeStr;
-                option.textContent = timeStr;
-                select.appendChild(option);
+                for (let minute of [0, 30]) {
+                    const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item';
+                    if (timeStr === selectedAnchorTime) {
+                        item.classList.add('selected');
+                    }
+                    item.textContent = timeStr;
+                    item.dataset.value = timeStr;
+                    
+                    item.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        selectAnchorTime(timeStr);
+                        closeAnchorDropdown();
+                    });
+                    
+                    item.addEventListener('mouseenter', function() {
+                        highlightAnchorItem(Array.from(list.children).indexOf(item));
+                    });
+                    
+                    list.appendChild(item);
+                }
             }
+        }
+        
+        // Select anchor time
+        function selectAnchorTime(time) {
+            const input = document.getElementById('anchor_input');
+            const list = document.getElementById('anchor_list');
+            selectedAnchorTime = time;
+            input.value = time;
+            
+            // Update selected class
+            list.querySelectorAll('.dropdown-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.value === time);
+            });
+            
+            updateCalculation(true); // Pass true to trigger flash animation
+            if (!updateInterval) {
+                updateInterval = setInterval(updateCalculation, 1000);
+            }
+        }
+        
+        // Open anchor dropdown
+        function openAnchorDropdown() {
+            const list = document.getElementById('anchor_list');
+            list.classList.add('open');
+            
+            // Scroll selected item into view
+            setTimeout(() => {
+                const selected = list.querySelector('.selected');
+                if (selected) {
+                    selected.scrollIntoView({ block: 'nearest' });
+                }
+            }, 0);
+        }
+        
+        // Close anchor dropdown
+        function closeAnchorDropdown() {
+            const list = document.getElementById('anchor_list');
+            list.classList.remove('open');
+        }
+        
+        // Highlight anchor item by index
+        function highlightAnchorItem(index) {
+            const list = document.getElementById('anchor_list');
+            const items = list.querySelectorAll('.dropdown-item');
+            
+            items.forEach((item, i) => {
+                item.classList.toggle('highlighted', i === index);
+            });
+            
+            highlightedAnchorIndex = index;
         }
 
         // Initialize timezone dropdown
@@ -529,7 +631,7 @@
             const input = document.getElementById('timezone_input');
             selectedTimezone = tz;
             input.value = tz;
-            updateCalculation();
+            updateCalculation(true); // Pass true to trigger flash animation
         }
 
         // Open dropdown
@@ -742,7 +844,20 @@
         }
 
         // Display results
-        function displayResults(result) {
+        function displayResults(result, shouldFlash = false) {
+            // Get all elements that will be updated
+            const resultItems = document.querySelectorAll('.result-item');
+            const timelineSection = document.getElementById('timelineSection');
+            
+            // Only trigger flash animation on user-initiated changes
+            if (shouldFlash) {
+                resultItems.forEach(item => {
+                    item.classList.remove('flash-update');
+                    void item.offsetWidth; // Force reflow to restart animation
+                    item.classList.add('flash-update');
+                });
+            }
+            
             document.getElementById('mineDay').textContent = result.mineDay;
             document.getElementById('mineDayTime').textContent = result.currentTime;
             document.getElementById('actualDay').textContent = result.actualDay;
@@ -767,6 +882,13 @@
 
             // Draw timeline
             drawTimeline(result);
+            
+            // Only trigger flash animation on timeline for user-initiated changes
+            if (shouldFlash && timelineSection.style.display === 'block') {
+                timelineSection.classList.remove('flash-update');
+                void timelineSection.offsetWidth; // Force reflow
+                timelineSection.classList.add('flash-update');
+            }
 
             document.getElementById('results').classList.add('show');
             document.getElementById('timelineSection').style.display = 'block';
@@ -803,6 +925,7 @@
             const mineDayStartDate = new Date(startParts[0]);
             let mineDayEndDate = new Date(endParts[0]);
             const startHour = parseInt(startParts[1].split(':')[0]);
+            const startMinute = parseInt(startParts[1].split(':')[1]);
             let endHour = parseInt(endParts[1].split(':')[0]);
             const endMinute = parseInt(endParts[1].split(':')[1]);
             
@@ -814,14 +937,9 @@
             
             // Calculate view window: extend 4 hours before mine day start and 4 hours after mine day end for visual clarity
             const viewStartDate = new Date(mineDayStartDate);
-            viewStartDate.setHours(startHour - 4, 0, 0, 0);
+            viewStartDate.setHours(startHour - 4, startMinute, 0, 0);
             const viewEndDate = new Date(mineDayEndDate);
-            viewEndDate.setHours(endHour + 4, 0, 0, 0);
-            
-            // Normalize if hours went negative
-            if (viewStartDate.getHours() > 20 && startHour < 6) {
-                viewStartDate.setDate(viewStartDate.getDate() - 1);
-            }
+            viewEndDate.setHours(endHour + 4, endMinute, 0, 0);
             
             // Total hours to display
             const totalMs = viewEndDate - viewStartDate;
@@ -837,8 +955,8 @@
             }
             
             // Draw mine day highlight (reduced height)
-            const highlightStartX = dateTimeToX(mineDayStartDate, startHour);
-            const highlightEndX = dateTimeToX(mineDayEndDate, endHour);
+            const highlightStartX = dateTimeToX(mineDayStartDate, startHour, startMinute);
+            const highlightEndX = dateTimeToX(mineDayEndDate, endHour, endMinute);
             const highlightWidth = highlightEndX - highlightStartX;
             const highlightHeight = 20;
             const highlightY = padding.top + (graphHeight - highlightHeight) / 2;
@@ -851,8 +969,8 @@
             ctx.strokeRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
             
             // Draw timeline axis
-            ctx.strokeStyle = '#bbb';
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(padding.left, padding.top + graphHeight);
             ctx.lineTo(width - padding.right, padding.top + graphHeight);
@@ -872,8 +990,8 @@
                 
                 // Draw tick mark (taller at midnight)
                 const isMidnight = hour === 0;
-                ctx.strokeStyle = isMidnight ? '#333' : '#ccc';
-                ctx.lineWidth = isMidnight ? 2 : 0.5;
+                ctx.strokeStyle = isMidnight ? '#333' : '#888';
+                ctx.lineWidth = isMidnight ? 2 : 1;
                 ctx.beginPath();
                 ctx.moveTo(x, padding.top + graphHeight);
                 ctx.lineTo(x, padding.top + graphHeight + (isMidnight ? 12 : 5));
@@ -891,10 +1009,13 @@
                     ctx.setLineDash([]);
                 }
                 
-                // Draw all hour labels
-                ctx.fillStyle = isMidnight ? '#333' : '#777';
-                ctx.font = isMidnight ? 'bold 11px Segoe UI, sans-serif' : '10px Segoe UI, sans-serif';
-                ctx.fillText(hour.toString().padStart(2, '0'), x, padding.top + graphHeight + 20);
+                // Draw hour labels only at midnight or every 3 hours
+                const shouldShowLabel = isMidnight || hour % 3 === 0;
+                if (shouldShowLabel) {
+                    ctx.fillStyle = isMidnight ? '#333' : '#444';
+                    ctx.font = isMidnight ? 'bold 11px Segoe UI, sans-serif' : '10px Segoe UI, sans-serif';
+                    ctx.fillText(hour.toString().padStart(2, '0'), x, padding.top + graphHeight + 20);
+                }
                 
                 // Draw date labels at midnight
                 if (isMidnight) {
@@ -956,11 +1077,12 @@
             // Start date label (rotated or positioned above)
             const startDateParts = startParts[0].split('-');
             const startDateStr = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
+            const startTimeStr = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
             ctx.fillStyle = '#2e7d32';
             ctx.font = 'bold 10px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(startDateStr, highlightStartX, padding.top - 5);
-            ctx.fillText(startParts[1], highlightStartX, padding.top + 10);
+            ctx.fillText(startTimeStr, highlightStartX, padding.top + 10);
             
             // Draw end boundary marker with date
             ctx.strokeStyle = '#2e7d32';
@@ -975,33 +1097,26 @@
             // End date label
             const endDateForLabel = new Date(mineDayEndDate);
             const endDateStr = `${endDateForLabel.getDate().toString().padStart(2, '0')}-${(endDateForLabel.getMonth() + 1).toString().padStart(2, '0')}-${endDateForLabel.getFullYear()}`;
+            const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
             ctx.fillStyle = '#2e7d32';
             ctx.font = 'bold 10px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(endDateStr, highlightEndX, padding.top - 5);
-            ctx.fillText(endHour.toString().padStart(2, '0') + ':00', highlightEndX, padding.top + 10);
+            ctx.fillText(endTimeStr, highlightEndX, padding.top + 10);
         }
 
         // Update calculation
-        function updateCalculation() {
-            const anchorTime = document.getElementById('anchor_time').value;
-            
-            if (anchorTime && selectedTimezone) {
-                const result = calculateMineDay(anchorTime, selectedTimezone);
-                displayResults(result);
+        function updateCalculation(shouldFlash = false) {
+            if (selectedAnchorTime && selectedTimezone) {
+                const result = calculateMineDay(selectedAnchorTime, selectedTimezone);
+                displayResults(result, shouldFlash);
             }
         }
 
-        // Event listeners
-        document.getElementById('anchor_time').addEventListener('change', function() {
-            updateCalculation();
-            if (!updateInterval) {
-                updateInterval = setInterval(updateCalculation, 1000);
-            }
-        });
-
         const timezoneInput = document.getElementById('timezone_input');
         const timezoneList = document.getElementById('timezone_list');
+        const anchorInput = document.getElementById('anchor_input');
+        const anchorList = document.getElementById('anchor_list');
 
         // Click on input opens dropdown and selects all text
         timezoneInput.addEventListener('click', function() {
@@ -1064,11 +1179,62 @@
             }
         });
 
+        // Anchor time dropdown event listeners
+        anchorInput.addEventListener('click', function() {
+            if (!anchorList.classList.contains('open')) {
+                openAnchorDropdown();
+            }
+        });
+        
+        anchorInput.addEventListener('focus', function() {
+            openAnchorDropdown();
+        });
+        
+        anchorInput.addEventListener('blur', function() {
+            setTimeout(closeAnchorDropdown, 150);
+        });
+        
+        anchorInput.addEventListener('keydown', function(e) {
+            const items = anchorList.querySelectorAll('.dropdown-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!anchorList.classList.contains('open')) {
+                    openAnchorDropdown();
+                } else {
+                    const newIndex = Math.min(highlightedAnchorIndex + 1, items.length - 1);
+                    highlightAnchorItem(newIndex);
+                    items[newIndex]?.scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (anchorList.classList.contains('open')) {
+                    const newIndex = Math.max(highlightedAnchorIndex - 1, 0);
+                    highlightAnchorItem(newIndex);
+                    items[newIndex]?.scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlightedAnchorIndex >= 0 && items[highlightedAnchorIndex]) {
+                    selectAnchorTime(items[highlightedAnchorIndex].dataset.value);
+                    closeAnchorDropdown();
+                    anchorInput.blur();
+                }
+            } else if (e.key === 'Escape') {
+                closeAnchorDropdown();
+                anchorInput.blur();
+            }
+        });
+        
         // Click outside closes dropdown
         document.addEventListener('click', function(e) {
-            const wrapper = document.getElementById('timezone_wrapper');
-            if (!wrapper.contains(e.target)) {
+            const tzWrapper = document.getElementById('timezone_wrapper');
+            const anchorWrapper = document.getElementById('anchor_wrapper');
+            if (!tzWrapper.contains(e.target)) {
                 closeDropdown();
+            }
+            if (!anchorWrapper.contains(e.target)) {
+                closeAnchorDropdown();
             }
         });
 
