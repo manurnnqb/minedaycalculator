@@ -331,6 +331,13 @@
             height: 8px;
             border-radius: 50%;
         }
+
+        .legend-isoday {
+            background: #1565c0;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
@@ -360,7 +367,7 @@
         
         <div class="results" id="results">
             <div class="result-item">
-                <div class="result-label">Current Mine Day Time:</div>
+                <div class="result-label">Current Mine Day and Time:</div>
                 <div class="datetime-row">
                     <span class="mine-day-value" id="mineDay"></span>
                     <span class="time-display" id="mineDayTime">00:00:00</span>
@@ -368,7 +375,7 @@
             </div>
             
             <div class="result-item">
-                <div class="result-label">Actual Time in Timezone:<span class="utc-offset" id="utcOffset"></span></div>
+                <div class="result-label">Actual Time in Timezone: (<span id="selectedTz"></span>)<span class="utc-offset" id="utcOffset"></span></div>
                 <div class="datetime-row">
                     <span class="actual-day-value" id="actualDay"></span>
                     <span class="time-display actual-time-display" id="actualTime">00:00:00</span>
@@ -376,7 +383,7 @@
             </div>
             
             <div class="result-item">
-                <div class="result-label">Current Mine Day Range in ISO:</div>
+                <div class="result-label">Current Mine Day's Range in ISO:</div>
                 <div class="result-value range-iso" id="mineDayRange"></div>
             </div>
         </div>
@@ -403,6 +410,10 @@
                 <div class="legend-item">
                     <div class="legend-color legend-current"></div>
                     <span>Current Time</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-isoday"></div>
+                    <span>ISO Calendar Day</span>
                 </div>
             </div>
         </div>
@@ -736,6 +747,7 @@
             document.getElementById('mineDayTime').textContent = result.currentTime;
             document.getElementById('actualDay').textContent = result.actualDay;
             document.getElementById('actualTime').textContent = result.currentTime;
+            document.getElementById('selectedTz').textContent = selectedTimezone;
             document.getElementById('utcOffset').textContent = result.utcOffset;
 
             const rangeEl = document.getElementById('mineDayRange');
