@@ -171,14 +171,51 @@
             color: #333;
         }
         
+        .datetime-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
         .mine-day-value {
-            font-size: 1.3em;
+            font-size: 1.2em;
             color: #4CAF50;
             font-weight: 700;
         }
 
-        #actualDay {
+        .actual-day-value {
+            font-size: 1.2em;
+            color: #333;
             font-weight: 700;
+        }
+
+        .time-display {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #4CAF50;
+            background: #f0f9f0;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+        }
+
+        .actual-time-display {
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .utc-offset {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #e3f2fd;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #1565c0;
+            font-weight: 600;
+            margin-left: 8px;
         }
 
         .range-iso {
@@ -251,13 +288,19 @@
         
         <div class="results" id="results">
             <div class="result-item">
-                <div class="result-label">Current Mine Day:</div>
-                <div class="result-value mine-day-value" id="mineDay"></div>
+                <div class="result-label">Current Mine Day Time:</div>
+                <div class="datetime-row">
+                    <span class="mine-day-value" id="mineDay"></span>
+                    <span class="time-display" id="mineDayTime">00:00:00</span>
+                </div>
             </div>
             
             <div class="result-item">
-                <div class="result-label">Current Actual Day (Timezone):</div>
-                <div class="result-value" id="actualDay"></div>
+                <div class="result-label">Actual Time in Timezone:<span class="utc-offset" id="utcOffset"></span></div>
+                <div class="datetime-row">
+                    <span class="actual-day-value" id="actualDay"></span>
+                    <span class="time-display actual-time-display" id="actualTime">00:00:00</span>
+                </div>
             </div>
             
             <div class="result-item">
@@ -457,6 +500,72 @@
             return date.getHours() * 60 + date.getMinutes();
         }
 
+        // Get UTC offset for a timezone (e.g., "UTC+5:30")
+        function getUtcOffset(timezoneStr) {
+            const now = new Date();
+            
+            // Get time in UTC
+            const utcFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'UTC',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            // Get time in target timezone
+            const tzFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezoneStr,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            const utcParts = utcFormatter.formatToParts(now);
+            const tzParts = tzFormatter.formatToParts(now);
+            
+            const utcDate = new Date(
+                utcParts.find(p => p.type === 'year').value,
+                utcParts.find(p => p.type === 'month').value - 1,
+                utcParts.find(p => p.type === 'day').value,
+                utcParts.find(p => p.type === 'hour').value,
+                utcParts.find(p => p.type === 'minute').value
+            );
+            
+            const tzDate = new Date(
+                tzParts.find(p => p.type === 'year').value,
+                tzParts.find(p => p.type === 'month').value - 1,
+                tzParts.find(p => p.type === 'day').value,
+                tzParts.find(p => p.type === 'hour').value,
+                tzParts.find(p => p.type === 'minute').value
+            );
+            
+            const diffMinutes = (tzDate - utcDate) / (1000 * 60);
+            const sign = diffMinutes >= 0 ? '+' : '-';
+            const absMinutes = Math.abs(diffMinutes);
+            const hours = Math.floor(absMinutes / 60);
+            const minutes = absMinutes % 60;
+            
+            if (minutes === 0) {
+                return `UTC${sign}${hours}`;
+            } else {
+                return `UTC${sign}${hours}:${minutes.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // Format time as HH:MM:SS
+        function formatTime(date) {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
         // Calculate mine day based on rules
         function calculateMineDay(anchorTimeStr, timezoneStr) {
             const [anchorHour, anchorMinute] = anchorTimeStr.split(':').map(Number);
@@ -522,7 +631,9 @@
             
             return {
                 mineDay: formatDate(mineDay),
-                actualDay: `${formatDate(tzDate)} (${timezoneStr})`,
+                actualDay: formatDate(tzDate),
+                currentTime: formatTime(tzDate),
+                utcOffset: getUtcOffset(timezoneStr),
                 mineDayIsoStart: mineDayIsoStart,
                 mineDayIsoEnd: mineDayIsoEnd
             };
@@ -531,7 +642,10 @@
         // Display results
         function displayResults(result) {
             document.getElementById('mineDay').textContent = result.mineDay;
+            document.getElementById('mineDayTime').textContent = result.currentTime;
             document.getElementById('actualDay').textContent = result.actualDay;
+            document.getElementById('actualTime').textContent = result.currentTime;
+            document.getElementById('utcOffset').textContent = result.utcOffset;
 
             const rangeEl = document.getElementById('mineDayRange');
             const startPretty = result.mineDayIsoStart.replace('T', ' ');
