@@ -142,6 +142,26 @@
             color: #999;
             font-style: italic;
         }
+
+        .tz-name {
+            font-weight: 500;
+        }
+
+        .tz-offset {
+            color: #1565c0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 6px;
+            background: #e3f2fd;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .dropdown-item.selected .tz-offset {
+            color: #1565c0;
+            background: rgba(255, 255, 255, 0.9);
+        }
         
         .results {
             margin-top: 30px;
@@ -409,8 +429,13 @@
             </div>
             
             <div class="result-item">
-                <div class="result-label">Current Mine Day's Range in ISO:</div>
+                <div class="result-label">Current Mine Day's Range (<span id="rangeTz"></span>):</div>
                 <div class="result-value range-iso" id="mineDayRange"></div>
+            </div>
+            
+            <div class="result-item">
+                <div class="result-label">Current Mine Day's Range (UTC):</div>
+                <div class="result-value range-iso" id="mineDayRangeUtc"></div>
             </div>
         </div>
 
@@ -447,10 +472,26 @@
 
     <script>
         // Get all IANA timezones from browser, or use fallback list
+        // Also normalize legacy names to modern equivalents
+        const TIMEZONE_ALIASES = {
+            'Asia/Calcutta': 'Asia/Kolkata',
+            'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+            'Asia/Katmandu': 'Asia/Kathmandu',
+            'Asia/Rangoon': 'Asia/Yangon',
+            'Europe/Kiev': 'Europe/Kyiv',
+            'Pacific/Ponape': 'Pacific/Pohnpei',
+            'Pacific/Truk': 'Pacific/Chuuk',
+            'Atlantic/Faeroe': 'Atlantic/Faroe'
+        };
+
         const TIMEZONES = (() => {
             try {
                 if (typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function') {
-                    return Intl.supportedValuesOf('timeZone').sort();
+                    const rawList = Intl.supportedValuesOf('timeZone');
+                    // Replace legacy names with modern ones
+                    const normalized = rawList.map(tz => TIMEZONE_ALIASES[tz] || tz);
+                    // Remove duplicates and sort
+                    return [...new Set(normalized)].sort();
                 }
             } catch (e) {}
             // Fallback for older browsers
@@ -567,7 +608,12 @@
         function initTimezoneDropdown() {
             const input = document.getElementById('timezone_input');
             const list = document.getElementById('timezone_list');
-            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            let userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
+            // Map legacy timezone names to modern equivalents
+            if (TIMEZONE_ALIASES[userTimezone]) {
+                userTimezone = TIMEZONE_ALIASES[userTimezone];
+            }
 
             // Set initial value to user's timezone
             if (userTimezone && TIMEZONES.includes(userTimezone)) {
@@ -608,7 +654,10 @@
                 if (tz === selectedTimezone) {
                     item.classList.add('selected');
                 }
-                item.textContent = tz;
+                
+                // Get UTC offset for this timezone
+                const offset = getUtcOffset(tz);
+                item.innerHTML = `<span class="tz-name">${tz}</span> <span class="tz-offset">(${offset})</span>`;
                 item.dataset.value = tz;
                 item.dataset.index = index;
 
@@ -768,6 +817,75 @@
             return `${hours}:${minutes}:${seconds}`;
         }
 
+        // Convert a local timezone datetime to UTC and format as DD-MM-YYYY HH:MM
+        function convertToUtc(isoStr, timezoneStr, isEnd = false) {
+            const [datePart, timePart] = isoStr.split('T');
+            const [year, month, day] = datePart.split('-').map(Number);
+            let [hour, minute] = timePart.split(':').map(Number);
+            
+            // Get offset for that timezone at that time
+            const testDate = new Date();
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezoneStr,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            const utcFormatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'UTC',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+            
+            // Calculate offset in minutes
+            const tzParts = formatter.formatToParts(testDate);
+            const utcParts = utcFormatter.formatToParts(testDate);
+            
+            const tzDate = new Date(
+                tzParts.find(p => p.type === 'year').value,
+                tzParts.find(p => p.type === 'month').value - 1,
+                tzParts.find(p => p.type === 'day').value,
+                tzParts.find(p => p.type === 'hour').value,
+                tzParts.find(p => p.type === 'minute').value
+            );
+            
+            const utcDate = new Date(
+                utcParts.find(p => p.type === 'year').value,
+                utcParts.find(p => p.type === 'month').value - 1,
+                utcParts.find(p => p.type === 'day').value,
+                utcParts.find(p => p.type === 'hour').value,
+                utcParts.find(p => p.type === 'minute').value
+            );
+            
+            const offsetMs = tzDate - utcDate;
+            
+            // Create local date and subtract offset to get UTC
+            const localDate = new Date(year, month - 1, day, hour, minute);
+            const utcResult = new Date(localDate.getTime() - offsetMs);
+            
+            // For end times showing 23:59, keep showing 23:59 in UTC equivalent
+            // (subtract 1 minute from the 00:00 result if original was 23:59)
+            if (isEnd && hour === 23 && minute === 59) {
+                // The calculation is correct, just display as-is
+            }
+            
+            const utcDay = utcResult.getDate().toString().padStart(2, '0');
+            const utcMonth = (utcResult.getMonth() + 1).toString().padStart(2, '0');
+            const utcYear = utcResult.getFullYear();
+            const utcHour = utcResult.getHours().toString().padStart(2, '0');
+            const utcMinute = utcResult.getMinutes().toString().padStart(2, '0');
+            
+            return `${utcDay}-${utcMonth}-${utcYear} ${utcHour}:${utcMinute}`;
+        }
+
         // Calculate mine day based on rules
         function calculateMineDay(anchorTimeStr, timezoneStr) {
             const [anchorHour, anchorMinute] = anchorTimeStr.split(':').map(Number);
@@ -801,6 +919,19 @@
 
             let mineDay, mineDayIsoStart, mineDayIsoEnd;
             
+            // Calculate end time as 1 minute before anchor (e.g., 01:00 → 00:59)
+            const getEndTime = (anchorH, anchorM) => {
+                let endH = anchorH;
+                let endM = anchorM - 1;
+                if (endM < 0) {
+                    endM = 59;
+                    endH = endH - 1;
+                    if (endH < 0) endH = 23;
+                }
+                return `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+            };
+            const endTimeStr = getEndTime(anchorHour, anchorMinute);
+            
             if (anchorHour === 0 && anchorMinute === 0) {
                 // Rule 1: Anchor Time == 00:00 (ISO standard)
                 mineDay = calendarDay;
@@ -815,19 +946,22 @@
                 }
                 const mineDayEnd = addDays(mineDay, 1);
                 mineDayIsoStart = `${formatIsoDate(mineDay)}T${anchorTimeStr}`;
-                mineDayIsoEnd = `${formatIsoDate(mineDayEnd)}T${anchorTimeStr}`;
+                // End is 1 minute before anchor on next day
+                mineDayIsoEnd = `${formatIsoDate(mineDayEnd)}T${endTimeStr}`;
             } else {
                 // Rule 3: Anchor Time >= 12:00 (backward shift, labeled by end date)
                 if (currentMinutes >= anchorMinutes) {
                     mineDay = addDays(calendarDay, 1);
                     const mineDayStart = calendarDay;
                     mineDayIsoStart = `${formatIsoDate(mineDayStart)}T${anchorTimeStr}`;
-                    mineDayIsoEnd = `${formatIsoDate(mineDay)}T${anchorTimeStr}`;
+                    // End is 1 minute before anchor
+                    mineDayIsoEnd = `${formatIsoDate(mineDay)}T${endTimeStr}`;
                 } else {
                     mineDay = calendarDay;
                     const mineDayStart = addDays(calendarDay, -1);
                     mineDayIsoStart = `${formatIsoDate(mineDayStart)}T${anchorTimeStr}`;
-                    mineDayIsoEnd = `${formatIsoDate(mineDay)}T${anchorTimeStr}`;
+                    // End is 1 minute before anchor
+                    mineDayIsoEnd = `${formatIsoDate(mineDay)}T${endTimeStr}`;
                 }
             }
             
@@ -864,8 +998,11 @@
             document.getElementById('actualTime').textContent = result.currentTime;
             document.getElementById('selectedTz').textContent = selectedTimezone;
             document.getElementById('utcOffset').textContent = result.utcOffset;
+            document.getElementById('rangeTz').textContent = selectedTimezone;
 
             const rangeEl = document.getElementById('mineDayRange');
+            const rangeUtcEl = document.getElementById('mineDayRangeUtc');
+            
             // Convert ISO format (YYYY-MM-DD) to DD-MM-YYYY HH:MM
             const formatRangeDate = (isoStr) => {
                 const [datePart, timePart] = isoStr.split('T');
@@ -878,6 +1015,15 @@
                 <span class="range-chip">${startPretty}</span>
                 <span class="range-separator">to</span>
                 <span class="range-chip">${endPretty}</span>
+            `;
+            
+            // Calculate and display UTC range
+            const startUtc = convertToUtc(result.mineDayIsoStart, selectedTimezone, false);
+            const endUtc = convertToUtc(result.mineDayIsoEnd, selectedTimezone, true);
+            rangeUtcEl.innerHTML = `
+                <span class="range-chip">${startUtc}</span>
+                <span class="range-separator">to</span>
+                <span class="range-chip">${endUtc}</span>
             `;
 
             // Draw timeline
@@ -929,17 +1075,34 @@
             let endHour = parseInt(endParts[1].split(':')[0]);
             const endMinute = parseInt(endParts[1].split(':')[1]);
             
-            // If end time is 23:59, treat as ending at 00:00 next day for the graph (spans full 24 hours)
-            if (endHour === 23 && endMinute === 59) {
-                mineDayEndDate.setDate(mineDayEndDate.getDate() + 1);
-                endHour = 0;
+            // If end time is 23:59, treat as ending at 00:00 next day for the graph positioning (spans full 24 hours)
+            // For other end times (e.g., 00:59 for anchor 01:00), position at anchor time for full 24-hour span
+            // But keep original values for label display
+            let endMinuteForGraph = endMinute;
+            let endHourForGraph = endHour;
+            let endDateForGraph = new Date(mineDayEndDate);
+            const originalEndHour = endHour;
+            const originalEndMinute = endMinute;
+            const originalEndDate = new Date(mineDayEndDate);
+            
+            // Add 1 minute to get the actual end position (anchor time of next day)
+            endMinuteForGraph = endMinute + 1;
+            if (endMinuteForGraph >= 60) {
+                endMinuteForGraph = 0;
+                endHourForGraph = endHour + 1;
+                if (endHourForGraph >= 24) {
+                    endHourForGraph = 0;
+                    endDateForGraph.setDate(endDateForGraph.getDate() + 1);
+                }
+            } else {
+                endHourForGraph = endHour;
             }
             
             // Calculate view window: extend 4 hours before mine day start and 4 hours after mine day end for visual clarity
             const viewStartDate = new Date(mineDayStartDate);
             viewStartDate.setHours(startHour - 4, startMinute, 0, 0);
-            const viewEndDate = new Date(mineDayEndDate);
-            viewEndDate.setHours(endHour + 4, endMinute, 0, 0);
+            const viewEndDate = new Date(endDateForGraph);
+            viewEndDate.setHours(endHourForGraph + 4, endMinuteForGraph, 0, 0);
             
             // Total hours to display
             const totalMs = viewEndDate - viewStartDate;
@@ -956,7 +1119,7 @@
             
             // Draw mine day highlight (reduced height)
             const highlightStartX = dateTimeToX(mineDayStartDate, startHour, startMinute);
-            const highlightEndX = dateTimeToX(mineDayEndDate, endHour, endMinute);
+            const highlightEndX = dateTimeToX(endDateForGraph, endHourForGraph, endMinuteForGraph);
             const highlightWidth = highlightEndX - highlightStartX;
             const highlightHeight = 20;
             const highlightY = padding.top + (graphHeight - highlightHeight) / 2;
@@ -1094,10 +1257,9 @@
             ctx.stroke();
             ctx.setLineDash([]);
             
-            // End date label
-            const endDateForLabel = new Date(mineDayEndDate);
-            const endDateStr = `${endDateForLabel.getDate().toString().padStart(2, '0')}-${(endDateForLabel.getMonth() + 1).toString().padStart(2, '0')}-${endDateForLabel.getFullYear()}`;
-            const endTimeStr = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+            // End date label - use original values for display (show 23:59 not 00:00)
+            const endDateStr = `${originalEndDate.getDate().toString().padStart(2, '0')}-${(originalEndDate.getMonth() + 1).toString().padStart(2, '0')}-${originalEndDate.getFullYear()}`;
+            const endTimeStr = `${originalEndHour.toString().padStart(2, '0')}:${originalEndMinute.toString().padStart(2, '0')}`;
             ctx.fillStyle = '#2e7d32';
             ctx.font = 'bold 10px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
