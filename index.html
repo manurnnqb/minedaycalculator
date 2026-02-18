@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mine Day Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            background: white;
+        }
+        
+        select:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        /* Custom dropdown styles */
+        .dropdown-wrapper {
+            position: relative;
+        }
+
+        .dropdown-input {
+            width: 100%;
+            padding: 10px;
+            padding-right: 30px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+        }
+
+        .dropdown-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .dropdown-arrow {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #666;
+            font-size: 0.8em;
+        }
+
+        .dropdown-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #4CAF50;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .dropdown-list.open {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item.highlighted {
+            background: #e8f5e9;
+        }
+
+        .dropdown-item.selected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .dropdown-empty {
+            padding: 10px;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #4CAF50;
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .result-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        
+        .result-value {
+            font-size: 1.1em;
+            color: #333;
+        }
+        
+        .mine-day-value {
+            font-size: 1.3em;
+            color: #4CAF50;
+            font-weight: 700;
+        }
+
+        #actualDay {
+            font-weight: 700;
+        }
+
+        .range-iso {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .range-iso .range-chip {
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #eef5ff;
+            border: 1px solid #c7d7ff;
+            color: #2c3e50;
+        }
+
+        .range-iso .range-separator {
+            color: #777;
+            font-size: 0.9em;
+        }
+
+        .rules-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff9e6;
+            border-radius: 6px;
+            border-left: 4px solid #f0ad4e;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .rules-info summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .rules-info ol {
+            margin: 10px 0 0 20px;
+        }
+
+        .rules-info li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mine Day Calculator</h1>
+        
+        <div class="form-group">
+            <label for="anchor_time">Anchor Time:</label>
+            <select id="anchor_time">
+                <!-- Populated by JavaScript -->
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Timezone:</label>
+            <div class="dropdown-wrapper" id="timezone_wrapper">
+                <input type="text" class="dropdown-input" id="timezone_input" placeholder="Search timezone..." autocomplete="off">
+                <span class="dropdown-arrow">▼</span>
+                <div class="dropdown-list" id="timezone_list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="results" id="results">
+            <div class="result-item">
+                <div class="result-label">Current Mine Day:</div>
+                <div class="result-value mine-day-value" id="mineDay"></div>
+            </div>
+            
+            <div class="result-item">
+                <div class="result-label">Current Actual Day (Timezone):</div>
+                <div class="result-value" id="actualDay"></div>
+            </div>
+            
+            <div class="result-item">
+                <div class="result-label">Current Mine Day Range in ISO:</div>
+                <div class="result-value range-iso" id="mineDayRange"></div>
+            </div>
+        </div>
+
+        <details class="rules-info">
+            <summary>How Mine Day is Calculated</summary>
+            <ol>
+                <li><strong>Anchor = 00:00:</strong> Mine day = calendar day (ISO standard)</li>
+                <li><strong>Anchor &lt; 12:00:</strong> Mine day starts at anchor, ends next day at anchor</li>
+                <li><strong>Anchor ≥ 12:00:</strong> Mine day starts previous day at anchor, ends at anchor</li>
+            </ol>
+        </details>
+    </div>
+
+    <script>
+        // Get all IANA timezones from browser, or use fallback list
+        const TIMEZONES = (() => {
+            try {
+                if (typeof Intl !== 'undefined' && typeof Intl.supportedValuesOf === 'function') {
+                    return Intl.supportedValuesOf('timeZone').sort();
+                }
+            } catch (e) {}
+            // Fallback for older browsers
+            return [
+                'UTC',
+                'Africa/Cairo', 'Africa/Johannesburg',
+                'America/Argentina/Buenos_Aires', 'America/Bogota', 'America/Chicago',
+                'America/Denver', 'America/Halifax', 'America/Lima', 'America/Los_Angeles',
+                'America/Mexico_City', 'America/New_York', 'America/Sao_Paulo',
+                'America/St_Johns', 'America/Toronto', 'America/Vancouver',
+                'Asia/Bangkok', 'Asia/Dhaka', 'Asia/Dubai', 'Asia/Hong_Kong',
+                'Asia/Kolkata', 'Asia/Mumbai', 'Asia/Seoul', 'Asia/Shanghai',
+                'Asia/Singapore', 'Asia/Tokyo',
+                'Australia/Melbourne', 'Australia/Perth', 'Australia/Sydney',
+                'Europe/Amsterdam', 'Europe/Berlin', 'Europe/London', 'Europe/Madrid',
+                'Europe/Moscow', 'Europe/Paris', 'Europe/Rome', 'Europe/Stockholm',
+                'Pacific/Auckland'
+            ];
+        })();
+
+        let updateInterval = null;
+        let selectedTimezone = '';
+        let highlightedIndex = -1;
+
+        // Populate anchor time dropdown (00:00 to 23:00)
+        function populateAnchorTimes() {
+            const select = document.getElementById('anchor_time');
+            for (let hour = 0; hour < 24; hour++) {
+                const option = document.createElement('option');
+                const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                option.value = timeStr;
+                option.textContent = timeStr;
+                select.appendChild(option);
+            }
+        }
+
+        // Initialize timezone dropdown
+        function initTimezoneDropdown() {
+            const input = document.getElementById('timezone_input');
+            const list = document.getElementById('timezone_list');
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            // Set initial value to user's timezone
+            if (userTimezone && TIMEZONES.includes(userTimezone)) {
+                selectedTimezone = userTimezone;
+                input.value = userTimezone;
+            } else {
+                selectedTimezone = TIMEZONES[0];
+                input.value = TIMEZONES[0];
+            }
+
+            // Render initial list
+            renderDropdownList('');
+        }
+
+        // Render dropdown list based on filter
+        function renderDropdownList(filter) {
+            const list = document.getElementById('timezone_list');
+            const filterLower = filter.toLowerCase();
+            
+            list.innerHTML = '';
+            highlightedIndex = -1;
+
+            const filtered = TIMEZONES.filter(tz => 
+                !filter || tz.toLowerCase().includes(filterLower)
+            );
+
+            if (filtered.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'dropdown-empty';
+                empty.textContent = 'No timezones found';
+                list.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach((tz, index) => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item';
+                if (tz === selectedTimezone) {
+                    item.classList.add('selected');
+                }
+                item.textContent = tz;
+                item.dataset.value = tz;
+                item.dataset.index = index;
+
+                item.addEventListener('mousedown', function(e) {
+                    e.preventDefault(); // Prevent input blur
+                    selectTimezone(tz);
+                    closeDropdown();
+                });
+
+                item.addEventListener('mouseenter', function() {
+                    highlightItem(index);
+                });
+
+                list.appendChild(item);
+            });
+        }
+
+        // Select a timezone
+        function selectTimezone(tz) {
+            const input = document.getElementById('timezone_input');
+            selectedTimezone = tz;
+            input.value = tz;
+            updateCalculation();
+        }
+
+        // Open dropdown
+        function openDropdown() {
+            const list = document.getElementById('timezone_list');
+            const input = document.getElementById('timezone_input');
+            list.classList.add('open');
+            
+            // Re-render with current filter
+            renderDropdownList(input.value === selectedTimezone ? '' : input.value);
+            
+            // Scroll selected item into view
+            setTimeout(() => {
+                const selected = list.querySelector('.selected');
+                if (selected) {
+                    selected.scrollIntoView({ block: 'nearest' });
+                }
+            }, 0);
+        }
+
+        // Close dropdown
+        function closeDropdown() {
+            const list = document.getElementById('timezone_list');
+            const input = document.getElementById('timezone_input');
+            list.classList.remove('open');
+            
+            // Restore selected value in input
+            input.value = selectedTimezone;
+        }
+
+        // Highlight item by index
+        function highlightItem(index) {
+            const list = document.getElementById('timezone_list');
+            const items = list.querySelectorAll('.dropdown-item');
+            
+            items.forEach((item, i) => {
+                item.classList.toggle('highlighted', i === index);
+            });
+            
+            highlightedIndex = index;
+        }
+
+        // Format date as DD-MM-YYYY
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${day}-${month}-${year}`;
+        }
+
+        // Format date as ISO YYYY-MM-DD
+        function formatIsoDate(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Add days to a date
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+
+        // Get minutes since midnight
+        function getMinutesSinceMidnight(date) {
+            return date.getHours() * 60 + date.getMinutes();
+        }
+
+        // Calculate mine day based on rules
+        function calculateMineDay(anchorTimeStr, timezoneStr) {
+            const [anchorHour, anchorMinute] = anchorTimeStr.split(':').map(Number);
+            const anchorMinutes = anchorHour * 60 + anchorMinute;
+            
+            // Get current time in selected timezone
+            const now = new Date();
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: timezoneStr,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            const parts = formatter.formatToParts(now);
+            const tzDate = new Date(
+                parts.find(p => p.type === 'year').value,
+                parts.find(p => p.type === 'month').value - 1,
+                parts.find(p => p.type === 'day').value,
+                parts.find(p => p.type === 'hour').value,
+                parts.find(p => p.type === 'minute').value,
+                parts.find(p => p.type === 'second').value
+            );
+            
+            const currentMinutes = getMinutesSinceMidnight(tzDate);
+            const calendarDay = new Date(tzDate.getFullYear(), tzDate.getMonth(), tzDate.getDate());
+
+            let mineDay, mineDayIsoStart, mineDayIsoEnd;
+            
+            if (anchorHour === 0 && anchorMinute === 0) {
+                // Rule 1: Anchor Time == 00:00 (ISO standard)
+                mineDay = calendarDay;
+                mineDayIsoStart = `${formatIsoDate(mineDay)}T00:00`;
+                mineDayIsoEnd = `${formatIsoDate(mineDay)}T23:59`;
+            } else if (anchorHour < 12) {
+                // Rule 2: Anchor Time < 12:00 (forward shift)
+                if (currentMinutes >= anchorMinutes) {
+                    mineDay = calendarDay;
+                } else {
+                    mineDay = addDays(calendarDay, -1);
+                }
+                const mineDayEnd = addDays(mineDay, 1);
+                mineDayIsoStart = `${formatIsoDate(mineDay)}T${anchorTimeStr}`;
+                mineDayIsoEnd = `${formatIsoDate(mineDayEnd)}T${anchorTimeStr}`;
+            } else {
+                // Rule 3: Anchor Time >= 12:00 (backward shift, labeled by end date)
+                if (currentMinutes >= anchorMinutes) {
+                    mineDay = addDays(calendarDay, 1);
+                    const mineDayStart = calendarDay;
+                    mineDayIsoStart = `${formatIsoDate(mineDayStart)}T${anchorTimeStr}`;
+                    mineDayIsoEnd = `${formatIsoDate(mineDay)}T${anchorTimeStr}`;
+                } else {
+                    mineDay = calendarDay;
+                    const mineDayStart = addDays(calendarDay, -1);
+                    mineDayIsoStart = `${formatIsoDate(mineDayStart)}T${anchorTimeStr}`;
+                    mineDayIsoEnd = `${formatIsoDate(mineDay)}T${anchorTimeStr}`;
+                }
+            }
+            
+            return {
+                mineDay: formatDate(mineDay),
+                actualDay: `${formatDate(tzDate)} (${timezoneStr})`,
+                mineDayIsoStart: mineDayIsoStart,
+                mineDayIsoEnd: mineDayIsoEnd
+            };
+        }
+
+        // Display results
+        function displayResults(result) {
+            document.getElementById('mineDay').textContent = result.mineDay;
+            document.getElementById('actualDay').textContent = result.actualDay;
+
+            const rangeEl = document.getElementById('mineDayRange');
+            const startPretty = result.mineDayIsoStart.replace('T', ' ');
+            const endPretty = result.mineDayIsoEnd.replace('T', ' ');
+            rangeEl.innerHTML = `
+                <span class="range-chip">${startPretty}</span>
+                <span class="range-separator">to</span>
+                <span class="range-chip">${endPretty}</span>
+            `;
+
+            document.getElementById('results').classList.add('show');
+        }
+
+        // Update calculation
+        function updateCalculation() {
+            const anchorTime = document.getElementById('anchor_time').value;
+            
+            if (anchorTime && selectedTimezone) {
+                const result = calculateMineDay(anchorTime, selectedTimezone);
+                displayResults(result);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('anchor_time').addEventListener('change', function() {
+            updateCalculation();
+            if (!updateInterval) {
+                updateInterval = setInterval(updateCalculation, 1000);
+            }
+        });
+
+        const timezoneInput = document.getElementById('timezone_input');
+        const timezoneList = document.getElementById('timezone_list');
+
+        // Click on input opens dropdown and selects all text
+        timezoneInput.addEventListener('click', function() {
+            this.select();
+            if (!timezoneList.classList.contains('open')) {
+                openDropdown();
+            }
+        });
+
+        // Focus on input opens dropdown and selects all text
+        timezoneInput.addEventListener('focus', function() {
+            this.select();
+            openDropdown();
+        });
+
+        // Typing filters the list
+        timezoneInput.addEventListener('input', function() {
+            renderDropdownList(this.value);
+            if (!timezoneList.classList.contains('open')) {
+                openDropdown();
+            }
+        });
+
+        // Blur closes dropdown
+        timezoneInput.addEventListener('blur', function() {
+            // Small delay to allow click on item to register
+            setTimeout(closeDropdown, 150);
+        });
+
+        // Keyboard navigation
+        timezoneInput.addEventListener('keydown', function(e) {
+            const items = timezoneList.querySelectorAll('.dropdown-item');
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!timezoneList.classList.contains('open')) {
+                    openDropdown();
+                } else {
+                    const newIndex = Math.min(highlightedIndex + 1, items.length - 1);
+                    highlightItem(newIndex);
+                    items[newIndex]?.scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (timezoneList.classList.contains('open')) {
+                    const newIndex = Math.max(highlightedIndex - 1, 0);
+                    highlightItem(newIndex);
+                    items[newIndex]?.scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (highlightedIndex >= 0 && items[highlightedIndex]) {
+                    selectTimezone(items[highlightedIndex].dataset.value);
+                    closeDropdown();
+                    timezoneInput.blur();
+                }
+            } else if (e.key === 'Escape') {
+                closeDropdown();
+                timezoneInput.blur();
+            }
+        });
+
+        // Click outside closes dropdown
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('timezone_wrapper');
+            if (!wrapper.contains(e.target)) {
+                closeDropdown();
+            }
+        });
+
+        // Initialize
+        populateAnchorTimes();
+        initTimezoneDropdown();
+        updateCalculation();
+        updateInterval = setInterval(updateCalculation, 1000);
+    </script>
+</body>
+</html>
