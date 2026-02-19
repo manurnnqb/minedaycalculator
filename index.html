@@ -251,11 +251,13 @@
         }
 
         .range-iso .range-chip {
-            padding: 4px 8px;
-            border-radius: 999px;
-            background: #eef5ff;
-            border: 1px solid #c7d7ff;
-            color: #2c3e50;
+              padding: 4px 8px;
+              border-radius: 999px;
+              background: #eef5ff;
+              border: 1px solid #1565c0;
+              color: #1565c0;
+              font-weight: bold;
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         }
 
         .range-iso .range-separator {
@@ -1239,7 +1241,7 @@
             const startDateParts = startParts[0].split('-');
             const startDateStr = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
             const startTimeStr = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
-            ctx.fillStyle = '#2e7d32';
+            ctx.fillStyle = '#1565c0';
             ctx.font = 'bold 10px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(startDateStr, highlightStartX, padding.top - 5);
@@ -1258,7 +1260,7 @@
             // End date label - use original values for display (show 23:59 not 00:00)
             const endDateStr = `${originalEndDate.getDate().toString().padStart(2, '0')}-${(originalEndDate.getMonth() + 1).toString().padStart(2, '0')}-${originalEndDate.getFullYear()}`;
             const endTimeStr = `${originalEndHour.toString().padStart(2, '0')}:${originalEndMinute.toString().padStart(2, '0')}`;
-            ctx.fillStyle = '#2e7d32';
+            ctx.fillStyle = '#1565c0';
             ctx.font = 'bold 10px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(endDateStr, highlightEndX, padding.top - 5);
@@ -1406,3 +1408,4 @@
     </script>
 </body>
 </html>
+
