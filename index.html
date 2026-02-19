@@ -571,7 +571,7 @@
             
             updateCalculation(true); // Pass true to trigger flash animation
             if (!updateInterval) {
-                updateInterval = setInterval(updateCalculation, 1000);
+                updateInterval = setInterval(updateCalculation, 500);
             }
         }
         
@@ -1404,7 +1404,7 @@
         populateAnchorTimes();
         initTimezoneDropdown();
         updateCalculation();
-        updateInterval = setInterval(updateCalculation, 1000);
+        updateInterval = setInterval(updateCalculation, 500);
     </script>
 </body>
 </html>
