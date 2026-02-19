@@ -391,22 +391,22 @@
         <h1>Mine Day Calculator</h1>
         
         <div class="form-group">
-            <label for="anchor_time">Anchor Time:</label>
-            <div class="dropdown-wrapper" id="anchor_wrapper">
-                <input type="text" class="dropdown-input" id="anchor_input" placeholder="Select anchor time..." autocomplete="off" readonly>
-                <span class="dropdown-arrow">▼</span>
-                <div class="dropdown-list" id="anchor_list">
-                    <!-- Populated by JavaScript -->
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-group">
             <label>Timezone:</label>
             <div class="dropdown-wrapper" id="timezone_wrapper">
                 <input type="text" class="dropdown-input" id="timezone_input" placeholder="Search timezone..." autocomplete="off">
                 <span class="dropdown-arrow">▼</span>
                 <div class="dropdown-list" id="timezone_list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="anchor_time">Anchor Time (local):</label>
+            <div class="dropdown-wrapper" id="anchor_wrapper">
+                <input type="text" class="dropdown-input" id="anchor_input" placeholder="Select anchor time..." autocomplete="off" readonly>
+                <span class="dropdown-arrow">▼</span>
+                <div class="dropdown-list" id="anchor_list">
                     <!-- Populated by JavaScript -->
                 </div>
             </div>
