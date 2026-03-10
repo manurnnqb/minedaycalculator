@@ -616,6 +616,20 @@ function drawTimeline(result) {
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
 
+    // Theme-aware color palette
+    const isDark = document.body.classList.contains('dark-mode');
+    const chartColors = {
+        axis:          isDark ? '#555'    : '#667',
+        tickMidnight:  isDark ? '#bbb'    : '#333',
+        tickHour:      isDark ? '#505050' : '#888',
+        gridLine:      isDark ? '#2d2d2d' : '#e0e0e0',
+        labelMidnight: isDark ? '#ccc'    : '#333',
+        labelHour:     isDark ? '#999'    : '#444',
+        dateLabel:     isDark ? '#6aabff' : '#1565c0',
+        mineDayLabel:  isDark ? '#66bb6a' : '#2e7d32',
+        mineDayBorder: isDark ? '#4CAF50' : '#2e7d32',
+    };
+
     const width = rect.width;
     const height = rect.height;
     const padding = { left: 25, right: 25, top: 30, bottom: 45 };
@@ -696,7 +710,7 @@ function drawTimeline(result) {
     ctx.strokeRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
 
     // Draw timeline axis
-    ctx.strokeStyle = '#667';
+    ctx.strokeStyle = chartColors.axis;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(padding.left, padding.top + graphHeight);
@@ -716,7 +730,7 @@ function drawTimeline(result) {
 
         // Draw tick mark (taller at midnight)
         const isMidnight = hour === 0;
-        ctx.strokeStyle = isMidnight ? '#333' : '#888';
+        ctx.strokeStyle = isMidnight ? chartColors.tickMidnight : chartColors.tickHour;
         ctx.lineWidth = isMidnight ? 2 : 1;
         ctx.beginPath();
         ctx.moveTo(x, padding.top + graphHeight);
@@ -725,7 +739,7 @@ function drawTimeline(result) {
 
         // Draw vertical grid line at midnight
         if (isMidnight) {
-            ctx.strokeStyle = '#e0e0e0';
+            ctx.strokeStyle = chartColors.gridLine;
             ctx.lineWidth = 1;
             ctx.setLineDash([3, 3]);
             ctx.beginPath();
@@ -736,7 +750,7 @@ function drawTimeline(result) {
         }
 
         // Draw hour labels for all hours
-        ctx.fillStyle = isMidnight ? '#333' : '#444';
+        ctx.fillStyle = isMidnight ? chartColors.labelMidnight : chartColors.labelHour;
         ctx.font = isMidnight ? 'bold 11px Segoe UI, sans-serif' : '10px Segoe UI, sans-serif';
         ctx.fillText(hour.toString().padStart(2, '0'), x, padding.top + graphHeight + 20);
 
@@ -744,7 +758,7 @@ function drawTimeline(result) {
         if (isMidnight) {
             const dateStr = `${currentTime.getDate().toString().padStart(2, '0')}-${(currentTime.getMonth() + 1).toString().padStart(2, '0')}-${currentTime.getFullYear()}`;
             if (dateStr !== lastDateLabel) {
-                ctx.fillStyle = '#1565c0';
+                ctx.fillStyle = chartColors.dateLabel;
                 ctx.font = 'bold 11px Segoe UI, sans-serif';
                 ctx.fillText(dateStr, x, padding.top + graphHeight + 38);
                 lastDateLabel = dateStr;
@@ -776,13 +790,13 @@ function drawTimeline(result) {
 
     // Draw mine day label in the middle of highlight
     const mineDayLabelX = highlightStartX + highlightWidth / 2;
-    ctx.fillStyle = '#2e7d32';
+    ctx.fillStyle = chartColors.mineDayLabel;
     ctx.font = 'bold 11px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Mine Day: ' + result.mineDay, mineDayLabelX, highlightY - 8);
 
     // Draw start boundary marker with date
-    ctx.strokeStyle = '#2e7d32';
+    ctx.strokeStyle = chartColors.mineDayBorder;
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 2]);
     ctx.beginPath();
@@ -795,14 +809,14 @@ function drawTimeline(result) {
     const startDateParts = startParts[0].split('-');
     const startDateStr = `${startDateParts[2]}-${startDateParts[1]}-${startDateParts[0]}`;
     const startTimeStr = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
-    ctx.fillStyle = '#1565c0';
+    ctx.fillStyle = chartColors.dateLabel;
     ctx.font = 'bold 10px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(startDateStr, highlightStartX, padding.top - 5);
     ctx.fillText(startTimeStr, highlightStartX, padding.top + 10);
 
     // Draw end boundary marker with date
-    ctx.strokeStyle = '#2e7d32';
+    ctx.strokeStyle = chartColors.mineDayBorder;
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 2]);
     ctx.beginPath();
@@ -814,7 +828,7 @@ function drawTimeline(result) {
     // End date label - use original values for display (show 23:59 not 00:00)
     const endDateStr = `${originalEndDate.getDate().toString().padStart(2, '0')}-${(originalEndDate.getMonth() + 1).toString().padStart(2, '0')}-${originalEndDate.getFullYear()}`;
     const endTimeStr = `${originalEndHour.toString().padStart(2, '0')}:${originalEndMinute.toString().padStart(2, '0')}`;
-    ctx.fillStyle = '#1565c0';
+    ctx.fillStyle = chartColors.dateLabel;
     ctx.font = 'bold 10px Segoe UI, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(endDateStr, highlightEndX, padding.top - 5);
@@ -1130,6 +1144,34 @@ selectTimezone = function (tz) {
     // Ensure reset visibility matches mode
     resetSimTimeBtn.style.display = isSimulatedTimeActive ? 'inline-block' : 'none';
 };
+
+// Dark / light mode toggle
+const themeToggleBtn = document.getElementById('themeToggle');
+
+function applyTheme(isDark) {
+    document.body.classList.toggle('dark-mode', isDark);
+    themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+    const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
+    themeToggleBtn.title = label;
+    themeToggleBtn.setAttribute('aria-label', label);
+    try { localStorage.setItem('mineDayTheme', isDark ? 'dark' : 'light'); } catch (e) { }
+}
+
+themeToggleBtn.addEventListener('click', function () {
+    applyTheme(!document.body.classList.contains('dark-mode'));
+    updateCalculation(); // Redraw canvas with updated theme colors
+});
+
+// Apply saved theme (or OS preference) on load
+(function () {
+    let saved = null;
+    try { saved = localStorage.getItem('mineDayTheme'); } catch (e) { }
+    if (saved) {
+        applyTheme(saved === 'dark');
+    } else {
+        applyTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+})();
 
 // Initialize
 populateAnchorTimes();
