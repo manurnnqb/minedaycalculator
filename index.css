@@ -696,8 +696,12 @@ label {
     background: transparent;
     cursor: pointer;
     padding: 4px;
-    font-size: 1.2em;
-    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: #b45309;
 }
 
 .theme-toggle:focus {
@@ -706,30 +710,35 @@ label {
 
 /* ===========================
    DARK MODE
+   Palette (cool blue-slate + green identity)
+   bg-body:#111827  bg-card:#1a2030  bg-surface:#1f2640  bg-input:#1c2235
+   border:#2c3452   text-hi:#e2e8f4  text-mid:#8b96b5  text-lo:#6b7490
+   green:#4CAF50    green-dim:#52c262   green-bg:#0e2118
+   blue:#5d8fc4     blue-bg:#0d1e35    blue-bdr:#1e3d65   pink:#d66fa5
    =========================== */
 body.dark-mode {
-    background: #121212;
+    background: #111827;
 }
 
 body.dark-mode .container,
 body.dark-mode .timeline-section {
-    background: #1e1e1e;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    background: #1a2030;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.6);
 }
 
 body.dark-mode h1 {
-    color: #e0e0e0;
+    color: #e2e8f4;
 }
 
 body.dark-mode label {
-    color: #a0a0a0;
+    color: #8b96b5;
 }
 
 body.dark-mode select,
 body.dark-mode input[type="text"] {
-    background: #2a2a2a;
-    border-color: #3d3d3d;
-    color: #e0e0e0;
+    background: #1c2235;
+    border-color: #2c3452;
+    color: #d0d8ed;
 }
 
 body.dark-mode select:focus,
@@ -738,29 +747,29 @@ body.dark-mode input[type="text"]:focus {
 }
 
 body.dark-mode .dropdown-input {
-    background: #2a2a2a;
-    border-color: #3d3d3d;
-    color: #e0e0e0;
+    background: #1c2235;
+    border-color: #2c3452;
+    color: #d0d8ed;
 }
 
 body.dark-mode .dropdown-arrow {
-    color: #888;
+    color: #6b7490;
 }
 
 body.dark-mode .dropdown-list {
-    background: #232323;
+    background: #1c2235;
     border-color: #4CAF50;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.55);
 }
 
 body.dark-mode .dropdown-item {
-    border-bottom-color: #2f2f2f;
-    color: #e0e0e0;
+    border-bottom-color: #232a42;
+    color: #d0d8ed;
 }
 
 body.dark-mode .dropdown-item:hover,
 body.dark-mode .dropdown-item.highlighted {
-    background: #1b3321;
+    background: #162a1e;
 }
 
 body.dark-mode .dropdown-item.selected {
@@ -769,196 +778,196 @@ body.dark-mode .dropdown-item.selected {
 }
 
 body.dark-mode .dropdown-empty {
-    color: #666;
+    color: #4d5470;
 }
 
 body.dark-mode .tz-name {
-    color: #e0e0e0;
+    color: #d0d8ed;
 }
 
 body.dark-mode .tz-offset {
-    background: #1a2a40;
-    color: #6aabff;
+    background: #0d1e35;
+    color: #5d8fc4;
 }
 
 body.dark-mode .dropdown-item.selected .tz-offset {
-    background: rgba(255, 255, 255, 0.15);
-    color: #1a2a60;
+    background: rgba(255, 255, 255, 0.18);
+    color: #0a1a30;
 }
 
 body.dark-mode .results {
-    background: #252525;
+    background: #1f2640;
     border-left-color: #4CAF50;
 }
 
 body.dark-mode .result-item {
-    border-bottom-color: #2f2f2f;
+    border-bottom-color: #2c3452;
 }
 
 body.dark-mode .result-label {
-    color: #a0a0a0;
+    color: #8b96b5;
 }
 
 body.dark-mode .result-value {
-    color: #e0e0e0;
+    color: #e2e8f4;
 }
 
 body.dark-mode .actual-day-value {
-    color: #e0e0e0;
+    color: #e2e8f4;
 }
 
 body.dark-mode .time-display {
-    background: #1a2e1a;
-    color: #4CAF50;
+    background: #0e2118;
+    color: #52c262;
 }
 
 body.dark-mode .actual-time-display {
-    background: #282828;
-    color: #ccc;
+    background: #1c2235;
+    color: #c5cde0;
 }
 
 body.dark-mode .utc-offset {
-    background: #1a2540;
-    color: #6aabff;
+    background: #0d1e35;
+    color: #5d8fc4;
 }
 
 body.dark-mode .range-iso .range-chip {
-    background: #1a2540;
-    border-color: #6aabff;
-    color: #6aabff;
+    background: #0d1e35;
+    border-color: #1e3d65;
+    color: #5d8fc4;
 }
 
 body.dark-mode .range-iso .range-separator {
-    color: #777;
+    color: #6b7490;
 }
 
 body.dark-mode .rules-info {
-    background: #272318;
-    border-left-color: #f0ad4e;
-    color: #999;
+    background: #1c1a0e;
+    border-left-color: #d97706;
+    color: #7a8299;
 }
 
 body.dark-mode .rules-info summary {
-    color: #bbb;
+    color: #a0a8c0;
 }
 
 body.dark-mode .timeline-title {
-    color: #e0e0e0;
+    color: #e2e8f4;
 }
 
 body.dark-mode .timeline-legend {
-    color: #888;
+    color: #6b7490;
 }
 
 body.dark-mode .legend-mineday {
-    background: rgba(76, 175, 80, 0.3);
+    background: rgba(76, 175, 80, 0.25);
     border-color: #4CAF50;
 }
 
 body.dark-mode .sim-editor {
-    background: #252525;
-    border-color: #2f2f2f;
+    background: #1f2640;
+    border-color: #2c3452;
 }
 
 body.dark-mode .sim-input {
-    background: #2a2a2a;
-    border-color: #3d3d3d;
-    color: #e0e0e0;
+    background: #1c2235;
+    border-color: #2c3452;
+    color: #d0d8ed;
 }
 
 body.dark-mode .sim-input::placeholder {
-    color: #666;
+    color: #4d5470;
 }
 
 body.dark-mode .btn-link {
-    color: #6aabff;
+    color: #5d8fc4;
 }
 
 body.dark-mode .btn-link:hover {
-    background: #1a2535;
+    background: #131e32;
 }
 
 body.dark-mode .btn-link:focus {
-    box-shadow: 0 0 0 2px rgba(106, 171, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(93, 143, 196, 0.35);
 }
 
 body.dark-mode .btn-reset {
-    color: #f06292;
+    color: #d66fa5;
 }
 
 body.dark-mode .btn-reset:hover {
-    background: rgba(240, 98, 146, 0.1);
+    background: rgba(214, 111, 165, 0.1);
 }
 
 body.dark-mode .theme-toggle {
-    color: #ccc;
+    color: #94afc4;
 }
 
 /* Air Datepicker dark overrides */
 body.dark-mode .air-datepicker {
-    border-color: #3d3d3d;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+    border-color: #2c3452;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
 }
 
 body.dark-mode .air-datepicker--content {
-    background: #1e1e1e;
+    background: #1a2030;
 }
 
 body.dark-mode .air-datepicker-nav {
-    border-bottom-color: #2f2f2f;
-    background: #1e1e1e;
+    border-bottom-color: #2c3452;
+    background: #1a2030;
 }
 
 body.dark-mode .air-datepicker-nav--title,
 body.dark-mode .air-datepicker-nav--action {
-    color: #e0e0e0;
+    color: #d0d8ed;
 }
 
 body.dark-mode .air-datepicker-nav--action:hover,
 body.dark-mode .air-datepicker-nav--title:hover {
-    background: #1b3321;
-    color: #e0e0e0;
+    background: #162a1e;
+    color: #e2e8f4;
 }
 
 body.dark-mode .air-datepicker-body--day-name {
-    color: #4CAF50;
+    color: #52c262;
 }
 
 body.dark-mode .air-datepicker-cell {
-    color: #e0e0e0;
+    color: #d0d8ed;
 }
 
 body.dark-mode .air-datepicker-cell.-other-month- {
-    color: #555;
+    color: #3a4465;
 }
 
 body.dark-mode .air-datepicker-cell.-current- {
-    color: #6aabff;
+    color: #5d8fc4;
     font-weight: 600;
 }
 
 body.dark-mode .air-datepicker-cell.-focus- {
-    background: rgba(76, 175, 80, 0.18);
+    background: rgba(76, 175, 80, 0.15);
 }
 
 body.dark-mode .air-datepicker-cell.-in-range- {
-    background: rgba(76, 175, 80, 0.15);
-    color: #e0e0e0;
+    background: rgba(76, 175, 80, 0.12);
+    color: #d0d8ed;
 }
 
 body.dark-mode .air-datepicker-time {
-    border-top-color: #2f2f2f;
-    background: #252525;
+    border-top-color: #2c3452;
+    background: #1f2640;
 }
 
 body.dark-mode .air-datepicker-time--current {
-    color: #a0a0a0;
+    color: #8b96b5;
 }
 
 body.dark-mode .air-datepicker-button {
-    color: #6aabff;
+    color: #5d8fc4;
 }
 
 body.dark-mode .air-datepicker-button:hover {
-    background: #1a2535;
+    background: #131e32;
 }

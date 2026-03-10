@@ -619,14 +619,14 @@ function drawTimeline(result) {
     // Theme-aware color palette
     const isDark = document.body.classList.contains('dark-mode');
     const chartColors = {
-        axis:          isDark ? '#555'    : '#667',
-        tickMidnight:  isDark ? '#bbb'    : '#333',
-        tickHour:      isDark ? '#505050' : '#888',
-        gridLine:      isDark ? '#2d2d2d' : '#e0e0e0',
-        labelMidnight: isDark ? '#ccc'    : '#333',
-        labelHour:     isDark ? '#999'    : '#444',
-        dateLabel:     isDark ? '#6aabff' : '#1565c0',
-        mineDayLabel:  isDark ? '#66bb6a' : '#2e7d32',
+        axis:          isDark ? '#3a4465' : '#667',
+        tickMidnight:  isDark ? '#c5cde0' : '#333',
+        tickHour:      isDark ? '#3a4465' : '#888',
+        gridLine:      isDark ? '#232a42' : '#e0e0e0',
+        labelMidnight: isDark ? '#c5cde0' : '#333',
+        labelHour:     isDark ? '#8b96b5' : '#444',
+        dateLabel:     isDark ? '#5d8fc4' : '#1565c0',
+        mineDayLabel:  isDark ? '#52c262' : '#2e7d32',
         mineDayBorder: isDark ? '#4CAF50' : '#2e7d32',
     };
 
@@ -1148,9 +1148,12 @@ selectTimezone = function (tz) {
 // Dark / light mode toggle
 const themeToggleBtn = document.getElementById('themeToggle');
 
+const ICON_SUN = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>`;
+const ICON_MOON = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+
 function applyTheme(isDark) {
     document.body.classList.toggle('dark-mode', isDark);
-    themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+    themeToggleBtn.innerHTML = isDark ? ICON_MOON : ICON_SUN;
     const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
     themeToggleBtn.title = label;
     themeToggleBtn.setAttribute('aria-label', label);
