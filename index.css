@@ -616,6 +616,63 @@ input[type="text"]:focus {
 }
 
 /* ===========================
+   THEME TRANSITION
+   =========================== */
+
+/* Smooth per-element transitions (fallback + sub-element polish) */
+body,
+.container,
+.timeline-section,
+.results,
+.result-item,
+.result-label,
+.result-value,
+.actual-day-value,
+.mine-day-value,
+.time-display,
+.actual-time-display,
+.utc-offset,
+.range-iso .range-chip,
+.range-iso .range-separator,
+.rules-info,
+.rules-info summary,
+.dropdown-input,
+.dropdown-list,
+.dropdown-item,
+.tz-offset,
+.sim-editor,
+.sim-input,
+.btn-link,
+.btn-reset,
+.theme-toggle,
+.timeline-title,
+.timeline-legend,
+h1,
+label {
+    transition:
+        background-color 0.35s ease,
+        color 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease;
+}
+
+/* View Transitions API — circular reveal from the toggle button (top-right) */
+::view-transition-old(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+    animation: theme-circle-reveal 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    mix-blend-mode: normal;
+}
+
+@keyframes theme-circle-reveal {
+    from { clip-path: circle(0% at top right); }
+    to   { clip-path: circle(150% at top right); }
+}
+
+/* ===========================
    LAYOUT: HEADER BAR + TOGGLE
    =========================== */
 .header-bar {

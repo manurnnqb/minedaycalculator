@@ -1158,8 +1158,16 @@ function applyTheme(isDark) {
 }
 
 themeToggleBtn.addEventListener('click', function () {
-    applyTheme(!document.body.classList.contains('dark-mode'));
-    updateCalculation(); // Redraw canvas with updated theme colors
+    const isDark = !document.body.classList.contains('dark-mode');
+    if (document.startViewTransition) {
+        document.startViewTransition(() => {
+            applyTheme(isDark);
+            updateCalculation(); // Redraw canvas with updated theme colors
+        });
+    } else {
+        applyTheme(isDark);
+        updateCalculation();
+    }
 });
 
 // Apply saved theme (or OS preference) on load
