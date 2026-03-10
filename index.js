@@ -625,7 +625,7 @@ function drawTimeline(result) {
         gridLine:      isDark ? '#232a42' : '#e0e0e0',
         labelMidnight: isDark ? '#c5cde0' : '#333',
         labelHour:     isDark ? '#8b96b5' : '#444',
-        dateLabel:     isDark ? '#5d8fc4' : '#1565c0',
+        dateLabel:     isDark ? '#8aa8c4' : '#1565c0',
         mineDayLabel:  isDark ? '#52c262' : '#2e7d32',
         mineDayBorder: isDark ? '#4CAF50' : '#2e7d32',
     };
@@ -702,11 +702,11 @@ function drawTimeline(result) {
     const highlightHeight = 20;
     const highlightY = padding.top + (graphHeight - highlightHeight) / 2;
 
-    ctx.fillStyle = 'rgba(76, 175, 80, 0.35)';
+    ctx.fillStyle = isDark ? 'rgba(76, 175, 80, 0.13)' : 'rgba(76, 175, 80, 0.2)';
     ctx.fillRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
 
-    ctx.strokeStyle = '#4CAF50';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = isDark ? 'rgba(76, 175, 80, 0.4)' : 'rgba(56, 142, 60, 0.65)';
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(highlightStartX, highlightY, highlightWidth, highlightHeight);
 
     // Draw timeline axis
@@ -1163,9 +1163,19 @@ function applyTheme(isDark) {
 themeToggleBtn.addEventListener('click', function () {
     const isDark = !document.body.classList.contains('dark-mode');
     if (document.startViewTransition) {
-        document.startViewTransition(() => {
+        // Pin the origin to the button's center in viewport coordinates
+        const r = themeToggleBtn.getBoundingClientRect();
+        const x = Math.round(r.left + r.width / 2);
+        const y = Math.round(r.top + r.height / 2);
+        document.documentElement.style.setProperty('--theme-toggle-x', x + 'px');
+        document.documentElement.style.setProperty('--theme-toggle-y', y + 'px');
+        const transition = document.startViewTransition(() => {
             applyTheme(isDark);
             updateCalculation(); // Redraw canvas with updated theme colors
+        });
+        transition.finished.finally(() => {
+            document.documentElement.style.removeProperty('--theme-toggle-x');
+            document.documentElement.style.removeProperty('--theme-toggle-y');
         });
     } else {
         applyTheme(isDark);

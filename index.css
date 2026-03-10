@@ -656,20 +656,20 @@ label {
         box-shadow 0.35s ease;
 }
 
-/* View Transitions API — circular reveal from the toggle button (top-right) */
+/* View Transitions API — circular reveal expanding from the toggle button */
 ::view-transition-old(root) {
     animation: none;
     mix-blend-mode: normal;
 }
 
 ::view-transition-new(root) {
-    animation: theme-circle-reveal 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: theme-circle-reveal 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     mix-blend-mode: normal;
 }
 
 @keyframes theme-circle-reveal {
-    from { clip-path: circle(0% at top right); }
-    to   { clip-path: circle(150% at top right); }
+    from { clip-path: circle(0% at var(--theme-toggle-x) var(--theme-toggle-y)); }
+    to   { clip-path: circle(150% at var(--theme-toggle-x) var(--theme-toggle-y)); }
 }
 
 /* ===========================
@@ -817,7 +817,7 @@ body.dark-mode .actual-day-value {
 }
 
 body.dark-mode .time-display {
-    background: #0e2118;
+    background: #182e22;
     color: #52c262;
 }
 
@@ -862,6 +862,10 @@ body.dark-mode .timeline-legend {
 body.dark-mode .legend-mineday {
     background: rgba(76, 175, 80, 0.25);
     border-color: #4CAF50;
+}
+
+body.dark-mode .legend-isoday {
+    background: #8aa8c4;
 }
 
 body.dark-mode .sim-editor {
